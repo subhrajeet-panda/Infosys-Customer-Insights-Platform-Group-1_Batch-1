@@ -55,6 +55,35 @@ def health():
         "timestamp": datetime.datetime.now().isoformat(),
     }
 
+from fastapi.openapi.utils import get_openapi
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        "HTTPBearer": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+            "description": "Enter your JWT Bearer token obtained from Node backend (POST http://localhost:5000/api/auth/login)",
+        }
+    }
+    for path, path_item in openapi_schema.get("paths", {}).items():
+        if path != "/health":
+            for method in path_item:
+                path_item[method]["security"] = [{"HTTPBearer": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
+
 app.include_router(forecasting.router)
 app.include_router(customer_intelligence.router)
 app.include_router(benchmarking.router)

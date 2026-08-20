@@ -1,13 +1,13 @@
 import jwt
 from fastapi import Header, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from core.config import settings
 from core.db import fetch_df, sanitize
 
-def _decode_token(authorization: str | None) -> dict:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="No token provided")
-    token = authorization[len("Bearer "):]
+security_scheme = HTTPBearer(auto_error=False)
+
+def _decode_raw_token(token: str) -> dict:
     try:
         return jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
     except jwt.ExpiredSignatureError:
@@ -15,9 +15,15 @@ def _decode_token(authorization: str | None) -> dict:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
-def get_current_user(authorization: str | None = Header(default=None)) -> dict:
-                                                     
-    decoded = _decode_token(authorization)
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+) -> dict:
+    if not credentials or not credentials.credentials:
+        raise HTTPException(status_code=401, detail="No token provided")
+
+    raw_token = credentials.credentials
+
+    decoded = _decode_raw_token(raw_token)
     user_id = decoded.get("id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
