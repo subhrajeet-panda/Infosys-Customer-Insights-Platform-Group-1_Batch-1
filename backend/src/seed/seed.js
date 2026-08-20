@@ -265,7 +265,7 @@ async function seed() {
       );
     }
 
-    console.log('\nSeed complete. Demo login credentials (password for all: Password123!):');
+    console.log('\nSeed complete. Demo login credentials (password for all: MyPassword123!):');
     console.log('  Admin:     admin@shopsense.demo');
     console.log('  Vendor:    vendor1@shopsense.demo (UrbanThread Apparel, approved)');
     console.log('  Vendor:    vendor5@shopsense.demo (NovaCraft Supplies, pending approval)');

@@ -11,6 +11,7 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const cartRoutes    = require('./routes/cartRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
 const orderRoutes   = require('./routes/orderRoutes');
+const mlRoutes      = require('./routes/mlRoutes');
 
 const app = express();
 
@@ -74,6 +75,7 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/cart',      cartRoutes);
 app.use('/api/wishlist',  wishlistRoutes);
 app.use('/api/orders',    orderRoutes);
+app.use('/api/ml',        mlRoutes);
 
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 

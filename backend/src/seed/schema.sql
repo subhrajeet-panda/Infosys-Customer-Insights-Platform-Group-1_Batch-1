@@ -1,15 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-DROP TABLE IF EXISTS ml_results CASCADE;
-DROP TABLE IF EXISTS customer_events CASCADE;
-DROP TABLE IF EXISTS wishlist_items CASCADE;
-DROP TABLE IF EXISTS cart_items CASCADE;
-DROP TABLE IF EXISTS order_items CASCADE;
-DROP TABLE IF EXISTS orders CASCADE;
-DROP TABLE IF EXISTS products CASCADE;
-DROP TABLE IF EXISTS vendors CASCADE;
-DROP TABLE IF EXISTS marketplace_settings CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-CREATE TABLE users (
+
+CREATE TABLE IF NOT EXISTS users (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name          VARCHAR(150) NOT NULL,
   email         VARCHAR(150) UNIQUE NOT NULL,
@@ -19,7 +10,8 @@ CREATE TABLE users (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE vendors (
+
+CREATE TABLE IF NOT EXISTS vendors (
   id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id             UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
   business_name       VARCHAR(200) NOT NULL,
@@ -38,8 +30,9 @@ CREATE TABLE vendors (
   created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_vendors_status ON vendors(status);
-CREATE TABLE products (
+CREATE INDEX IF NOT EXISTS idx_vendors_status ON vendors(status);
+
+CREATE TABLE IF NOT EXISTS products (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   vendor_id       UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
   name            VARCHAR(200) NOT NULL,
@@ -53,9 +46,10 @@ CREATE TABLE products (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_products_vendor ON products(vendor_id);
-CREATE INDEX idx_products_category ON products(category);
-CREATE TABLE cart_items (
+CREATE INDEX IF NOT EXISTS idx_products_vendor ON products(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+
+CREATE TABLE IF NOT EXISTS cart_items (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   product_id  UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -64,14 +58,16 @@ CREATE TABLE cart_items (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (customer_id, product_id)
 );
-CREATE TABLE wishlist_items (
+
+CREATE TABLE IF NOT EXISTS wishlist_items (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   product_id  UUID NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (customer_id, product_id)
 );
-CREATE TABLE orders (
+
+CREATE TABLE IF NOT EXISTS orders (
   id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id       UUID REFERENCES users(id) ON DELETE SET NULL,
   vendor_id         UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
@@ -91,10 +87,11 @@ CREATE TABLE orders (
   created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_orders_vendor ON orders(vendor_id);
-CREATE INDEX idx_orders_customer ON orders(customer_id);
-CREATE INDEX idx_orders_created ON orders(created_at);
-CREATE TABLE order_items (
+CREATE INDEX IF NOT EXISTS idx_orders_vendor ON orders(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at);
+
+CREATE TABLE IF NOT EXISTS order_items (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id     UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
   product_id   UUID REFERENCES products(id) ON DELETE SET NULL,
@@ -104,30 +101,35 @@ CREATE TABLE order_items (
   unit_price   NUMERIC(10,2) NOT NULL,
   subtotal     NUMERIC(10,2) NOT NULL
 );
-CREATE INDEX idx_order_items_order ON order_items(order_id);
-CREATE INDEX idx_order_items_product ON order_items(product_id);
-CREATE TABLE customer_events (
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_product ON order_items(product_id);
+
+CREATE TABLE IF NOT EXISTS customer_events (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id UUID REFERENCES users(id) ON DELETE CASCADE,
   product_id  UUID REFERENCES products(id) ON DELETE CASCADE,
   event_type  VARCHAR(20) NOT NULL CHECK (event_type IN ('view','add_to_cart','wishlist','purchase')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX idx_events_customer ON customer_events(customer_id);
-CREATE INDEX idx_events_product ON customer_events(product_id);
-CREATE INDEX idx_events_type ON customer_events(event_type);
-CREATE TABLE ml_results (
+CREATE INDEX IF NOT EXISTS idx_events_customer ON customer_events(customer_id);
+CREATE INDEX IF NOT EXISTS idx_events_product ON customer_events(product_id);
+CREATE INDEX IF NOT EXISTS idx_events_type ON customer_events(event_type);
+
+CREATE TABLE IF NOT EXISTS ml_results (
   model_type   VARCHAR(50) PRIMARY KEY,
   payload      JSONB NOT NULL,
   generated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE TABLE marketplace_settings (
+
+CREATE TABLE IF NOT EXISTS marketplace_settings (
   key         VARCHAR(100) PRIMARY KEY,
   value       TEXT NOT NULL,
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 INSERT INTO marketplace_settings (key, value) VALUES
   ('default_commission_rate', '10.00'),
   ('marketplace_name', 'ShopSense'),
   ('currency', 'INR'),
-  ('allowed_categories', 'Electronics,Fashion,Home & Kitchen,Beauty,Sports,Books,Toys,Grocery');
+  ('allowed_categories', 'Electronics,Fashion,Home & Kitchen,Beauty,Sports,Books,Toys,Grocery')
+ON CONFLICT (key) DO NOTHING;
